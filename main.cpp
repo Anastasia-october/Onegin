@@ -217,14 +217,17 @@ int compar_2_look_note(const void* a, const void* b) {
     char* line_a = *((char **) a);
     char* line_b = *((char **) b);
 
-    size_t iterations = MIN(strlen(line_a), strlen(line_b));
-
     fprintf(stderr, "\t\tin comparator 2\n");
     fprintf(stderr, "\t\tlen a = <%zu> \t len b = <%zu>\n", strlen(line_a), strlen(line_b));
 
-    assert(iterations > 20 && iterations < 40); //REVIEW - delete than
+    size_t iterations = MAX(strlen(line_a), strlen(line_b));
 
-    for (size_t index_a = iterations, index_b = iterations; index_a > 0 && index_b > 0; index_a--, index_b--) {
+    assert(iterations > 20 && iterations < 45); //REVIEW - delete than
+
+    if (strlen(line_a) > strlen(line_b)) {
+        size_t difference = strlen(line_a) - strlen(line_b);
+
+        for (size_t index_a = iterations, index_b = iterations-difference; index_a > 0 && index_b > 0; index_a--, index_b--) {
         while (isalpha(line_a[index_a]) == 0) {
             index_a--;
         }
@@ -235,7 +238,25 @@ int compar_2_look_note(const void* a, const void* b) {
             return -1;
         else if (line_a[index_a] > line_b[index_b])
             return 1;
+        }
     }
+    else if (strlen(line_a) < strlen(line_b)) {
+        size_t difference = strlen(line_b) - strlen(line_a);
+
+        for (size_t index_a = iterations-difference, index_b = iterations; index_a > 0 && index_b > 0; index_a--, index_b--) {
+        while (isalpha(line_a[index_a]) == 0) {
+            index_a--;
+        }
+        while (isalpha(line_b[index_b]) == 0) {
+            index_b--;
+        }
+        if (line_a[index_a] < line_b[index_b])
+            return -1;
+        else if (line_a[index_a] > line_b[index_b])
+            return 1;
+        }
+    }
+
     return 0;
 }//REVIEW - if first string is in second string
 
