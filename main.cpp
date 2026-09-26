@@ -10,15 +10,15 @@
 
 char* name_file = "testOnegin.txt";
 
-int read_file_to_buffer(char** buffer, int fd);
-int make_pointer_array(char* buffer, char*** pointers);
-void do_one_sort(int fd, char* buffer, char** sorted_buffer, char** pointers, int compar(const void* a, const void* b));
+size_t read_file_to_buffer(char** buffer, int fd);
+int make_pointer_array(char* buffer, char*** pointers, size_t size_of_buffer);
+void do_one_sort(int fd, char* buffer, size_t size_of_buffer, char** sorted_buffer, char** pointers, int compar(const void* a, const void* b));
 size_t file_size(char* name_of_file);
 size_t my_strlen(char* str);
-int count_nlines(char* buffer);
+int count_nlines(char* buffer, size_t size_of_buffer);
 int compar_1_look_note(const void* a, const void* b);
 int compar_2_look_note(const void* a, const void* b);
-char* change_end_for_newline_symbols(char** pointers, char* buffer);
+void change_end_for_newline_symbols(char** pointers, char* buffer, size_t size_of_buffer, char** sorted_buffer);
 
 
 //NOTE - compar_1_look_note compares strings in ascending order
@@ -34,23 +34,27 @@ int main() {
     char** pointers = 0;
     char* sorted_buffer = 0;
 
-    read_file_to_buffer(&buffer, fd);
+    fprintf(stderr, "start\n\n");
+    size_t size_of_buffer = read_file_to_buffer(&buffer, fd);
     printf("file already read\n\n");
 
-    fprintf(stderr, "in make_pointer_array ");
-    make_pointer_array(buffer, &pointers);
+    fprintf(stderr, "in make_pointer_array\n");
+    make_pointer_array(buffer, &pointers, size_of_buffer);
     printf("pointers already done\n\n");
 
     fprintf(stderr, "FIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\n");
-    do_one_sort(fd, buffer, &sorted_buffer, pointers, compar_1_look_note);
+    do_one_sort(fd, buffer, size_of_buffer, &sorted_buffer, pointers, compar_1_look_note);
     printf("first sort already done\n");
+
+    free(sorted_buffer);
+
     fprintf(stderr, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
     fprintf(stderr, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
     // char* bak = "\nAAAAAA\n\n";
     // write(fd, bak, strlen(bak));
     fprintf(stderr, "SECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\n");
-    do_one_sort(fd, buffer, &sorted_buffer, pointers, compar_2_look_note);
+    do_one_sort(fd, buffer, size_of_buffer, &sorted_buffer, pointers, compar_2_look_note);
     fprintf(stderr, "second sort already done\n");
 
     free(buffer);
@@ -58,14 +62,14 @@ int main() {
     free(sorted_buffer);
 }
 
-int read_file_to_buffer(char** buffer, int fd) {
+size_t read_file_to_buffer(char** buffer, int fd) {
     assert(buffer);
 
     const size_t size_from_stat = file_size((char*)name_file);
 
     fprintf(stderr, "size of file <%zu>\n", size_from_stat);
 
-    *buffer = (char*)calloc(size_from_stat+2, sizeof(char));//NOTE - 1 байт на первый символ \n, 2 байт на \0
+    *buffer = (char*)calloc(size_from_stat+2, sizeof(char));//NOTE - 1 байт на первый символ \n, 1 байт на \0
 
     if (*buffer == NULL) {
         // TODO: use perror
@@ -77,6 +81,7 @@ int read_file_to_buffer(char** buffer, int fd) {
     (*buffer)++;
 
     ssize_t read_res = read(fd, *buffer, size_from_stat);
+    fprintf(stderr, "have read <%zu> bytes\n", (size_t)read_res);
 
     if ((size_t) read_res != size_from_stat) {
         // TODO: use perror
@@ -86,16 +91,17 @@ int read_file_to_buffer(char** buffer, int fd) {
 
     (*buffer)--;
 
-    fprintf(stderr, "in read_file_to_buffer bak n are ok\n");
-    return 0;
+    fprintf(stderr, "in read_file_to_buffer buffer has /n \n");
+    return strlen(*buffer);
 }
 
-int make_pointer_array(char* buffer, char*** pointers) {
+int make_pointer_array(char* buffer, char*** pointers, size_t size_of_buffer) {
     assert(buffer);
     assert(pointers);
 
-    size_t nlines = (size_t)count_nlines(buffer);  //NOTE - count_nlines(buffer) called first
-    // printf("number of lines <%zu>\n", nlines);
+    fprintf(stderr, "\tcall count_lines\n");
+    size_t nlines = (size_t)count_nlines(buffer, size_of_buffer);  //NOTE - count_nlines(buffer) called first
+    fprintf(stderr, "\tnumber of lines <%zu>\n", nlines);
 
     *pointers = (char**) calloc(nlines, sizeof(char*));
     // printf("size pointers 0 <%zu>\n", sizeof(pointers));
@@ -114,16 +120,21 @@ int make_pointer_array(char* buffer, char*** pointers) {
     return 0;
 }
 
-void do_one_sort(int fd, char* buffer, char** sorted_buffer, char** pointers,  int compar(const void* a, const void* b)) {
+void do_one_sort(int fd, char* buffer, size_t size_of_buffer, char** sorted_buffer, char** pointers,  int compar(const void* a, const void* b)) {
     fprintf(stderr, "in function do_one_sort\n");
-    fprintf(stderr, "\tin qsort ");
-    qsort(pointers, (size_t)count_nlines(buffer), sizeof(char *), compar); //NOTE - count_nlines(buffer) called second time
-    printf("\tpointers already sorted\n");
+    fprintf(stderr, "\tcall qsort call comparator\n");
+    qsort(pointers, (size_t)count_nlines(buffer, size_of_buffer), sizeof(char *), compar); //NOTE - count_nlines(buffer) called second time
+    fprintf(stderr, "\tpointers already sorted\n");
 
-    *sorted_buffer = change_end_for_newline_symbols(pointers, buffer);
-    printf("\tsorted_buffer already done\n");
+    fprintf(stderr, "\tcall change_end_for_newline_symbols\n");
+    change_end_for_newline_symbols(pointers, buffer, size_of_buffer, sorted_buffer);
+    fprintf(stderr, "sorted_buffer already done\n\tPiece of buffer\n\t");
 
-    int wrote = (int) write(fd, *sorted_buffer, strlen(buffer));//ANCHOR - ATTENSHION BLYAT NENADEJNO
+    for (int i = 0; i < 50; i++) {
+        fprintf(stderr, "|%c|", buffer[i]);
+    }
+    fprintf(stderr, "\tstrlen of buffer which is used by wrote <%zu>\n", size_of_buffer);
+    int wrote = (int) write(fd, *sorted_buffer, size_of_buffer);
 
     printf("\twrote <%d>\n", wrote);
 }
@@ -153,11 +164,12 @@ size_t my_strlen(char* str) {
     return size;
 }
 
-int count_nlines(char* buffer) {
+int count_nlines(char* buffer, size_t size_of_buffer) {
     assert(buffer);
 
     int nlines = 0;
-    size_t iterations = strlen(buffer);//ANCHOR - ATTENSHION BLYAT NENADEJNO
+    size_t iterations = size_of_buffer;
+    fprintf(stderr, "\t\tin count_nlines iterations = <%zu>\n", iterations);
     for (size_t i = 0; i < iterations; i++) {
         if (buffer[i] == '\n' || buffer[i] == '\0') {
             nlines++;
@@ -165,26 +177,26 @@ int count_nlines(char* buffer) {
         }
     }
 
-    printf("in count_nlines all bak n changed to bak 0\n");
+    fprintf(stderr, "\t\tall bak n changed to bak 0\n");
 
-    return nlines;
+    return nlines-1;
 }
 
 int compar_1_look_note(const void* a, const void* b) {
     assert(a);
     assert(b);
 
-    fprintf(stderr, "in compare_1_look_note\n");
-
     char* line_a = *((char **) a);
     char* line_b = *((char **) b);
 
     size_t iterations = MIN(strlen(line_a), strlen(line_b));
-    // fprintf(stderr, "len a = <%zu> \t len b = <%zu>\n", strlen(line_a), strlen(line_b));
-    assert(iterations > 20 && iterations < 40); //ANCHOR - delete than
+
+    fprintf(stderr, "\t\tin comparator 1\n");
+    fprintf(stderr, "\t\tlen a = <%zu> \t len b = <%zu>\n", strlen(line_a), strlen(line_b));
+
+    assert(iterations > 20 && iterations < 40); //REVIEW - delete than
 
     for (size_t index_a = 0, index_b = 0; index_a < iterations && index_b < iterations; index_a++, index_b++) {
-        // FIXME: overflow \0
         while (isalpha(line_a[index_a]) == 0) {
             index_a++;
         }
@@ -203,12 +215,14 @@ int compar_2_look_note(const void* a, const void* b) {
     assert(a);
     assert(b);
 
-    fprintf(stderr, "in compare_2_look_note\n");
-
     char* line_a = *((char **) a);
     char* line_b = *((char **) b);
 
     size_t iterations = MIN(strlen(line_a), strlen(line_b));
+
+    fprintf(stderr, "\t\tin comparator 1\n");
+    fprintf(stderr, "\t\tlen a = <%zu> \t len b = <%zu>\n", strlen(line_a), strlen(line_b));
+
     assert(iterations > 20 && iterations < 40); //REVIEW - delete than
 
     for (size_t index_a = iterations, index_b = iterations; index_a > 0 && index_b > 0; index_a--, index_b--) {
@@ -224,30 +238,40 @@ int compar_2_look_note(const void* a, const void* b) {
     return NULL;
 }//REVIEW - if first string is in second string
 
-char* change_end_for_newline_symbols(char** pointers, char* buffer) {
+void change_end_for_newline_symbols(char** pointers, char* buffer, size_t size_of_buffer, char** sorted_buffer) {
     assert(pointers);
     assert(buffer);
 
-    fprintf(stderr, "\nin change_end_for_newline_symbols\n");
-    fprintf(stderr, "\t");
+    fprintf(stderr, "\t\tin change_end_for_newline_symbols\n");
 
-    int nlines = count_nlines(buffer);  //NOTE - count_nlines(buffer) called
-    size_t iterations = strlen(buffer);//ANCHOR - ATTENSHION BLYAT NENADEJNO
-    char* buf = (char*)calloc(iterations+2, sizeof(char));
+    int nlines = count_nlines(buffer, size_of_buffer);  //NOTE - count_nlines(buffer) called
+    size_t iterations = size_of_buffer;
 
-    fprintf(stderr, "\titerations <%zu> buf pointer <%p> or <%d>\n", iterations, buf, buf);
+    *sorted_buffer = (char*)calloc(iterations+2, sizeof(char));
+
+    fprintf(stderr, "\t\titerations <%zu> buf pointer <%p> or <%d>\n", iterations, *sorted_buffer, *sorted_buffer);
+
+    fprintf(stderr, "\t\tbefore changing 0 to n-------------------------------------------------------------------------\n\t\t");
+    for (int i1 = 0; i1 < 50; i1++) {
+        fprintf(stderr, "|%c|", buffer[i1]);
+    }
+    fprintf(stderr, "\n\t\t");
 
     for (size_t i = 0; i < iterations; i++) {
         if (buffer[i] == '\0') {
             buffer[i] = '\n';
         }
     }
+    fprintf(stderr, "\t\tafter changing 0 to n-------------------------------------------------------------------------\n\t\t");
+    for (int i2 = 0; i2 < 50; i2++) {
+        fprintf(stderr, "|%c|", buffer[i2]);
+    }
+    fprintf(stderr, "\n");
+
 
     size_t filled_buf = 0;
     for (int line_pointer = 0; line_pointer < nlines; line_pointer++) {
-        memcpy(buf+filled_buf, pointers[line_pointer], my_strlen(pointers[line_pointer]));
+        memcpy(*sorted_buffer+filled_buf, pointers[line_pointer], my_strlen(pointers[line_pointer]));
         filled_buf = filled_buf + my_strlen(pointers[line_pointer]);
     }
-
-    return buf;
 }
