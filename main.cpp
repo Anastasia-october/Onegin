@@ -13,6 +13,7 @@ char* name_file = "testOnegin.txt";
 void do_one_sort(int fd, char* buffer, char* sorted_buffer, char** pointers, int compar(const void* a, const void* b));
 size_t file_size(char* name_of_file);
 int read_file_to_buffer(char** buffer, int fd);
+size_t my_strlen(char* str);
 int count_nlines(char* buffer);
 int make_pointer_array(char* buffer, char*** pointers);
 int compar_1_look_note(const void* a, const void* b);
@@ -110,6 +111,17 @@ int read_file_to_buffer(char** buffer, int fd) {
 
     printf("in read_file_to_buffer bak n are ok\n");
     return 0;
+}
+
+size_t my_strlen(char* str) {
+    assert(str != NULL);
+
+    size_t size = 0;
+    for (int i = 0; str[i] != '\n'; i++) {
+        size++;
+    }
+
+    return size;
 }
 
 int count_nlines(char* buffer) {
@@ -229,17 +241,13 @@ char* change_end_for_newline_symbols(char** pointers, char* buffer) {
 
     size_t filled_buf = 0;
     for (int line_pointer = 0; line_pointer < nlines; line_pointer++) {
-        memcpy(buf+filled_buf, pointers[line_pointer], strlen(pointers[line_pointer]));
-        filled_buf = filled_buf + strlen(pointers[line_pointer]);
+        memcpy(buf+filled_buf, pointers[line_pointer], my_strlen(pointers[line_pointer]));
+        filled_buf = filled_buf + my_strlen(pointers[line_pointer]);
 
-        fprintf(stderr, "line_pointer = <%d>  filled_buf = <%zu>  line: <%s>\n", line_pointer, filled_buf, pointers[line_pointer]);
+        fprintf(stderr, "line_pointer = <%d>  filled_buf = <%zu> len line = <%zu>\n", line_pointer, filled_buf, my_strlen(pointers[line_pointer]));
+        fprintf(stderr, "line: <%s>\n\n", pointers[line_pointer]);
     }
     fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
-
-    for (int i = 0; i < 40; i++) {
-        fprintf(stderr, "%c", buf[i]);
-    }
-    printf("\n");
 
     return buf;
 }
