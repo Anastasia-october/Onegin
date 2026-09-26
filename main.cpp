@@ -10,12 +10,12 @@
 
 char* name_file = "testOnegin.txt";
 
-void do_one_sort(int fd, char* buffer, char* sorted_buffer, char** pointers, int compar(const void* a, const void* b));
-size_t file_size(char* name_of_file);
 int read_file_to_buffer(char** buffer, int fd);
+int make_pointer_array(char* buffer, char*** pointers);
+void do_one_sort(int fd, char* buffer, char** sorted_buffer, char** pointers, int compar(const void* a, const void* b));
+size_t file_size(char* name_of_file);
 size_t my_strlen(char* str);
 int count_nlines(char* buffer);
-int make_pointer_array(char* buffer, char*** pointers);
 int compar_1_look_note(const void* a, const void* b);
 int compar_2_look_note(const void* a, const void* b);
 char* change_end_for_newline_symbols(char** pointers, char* buffer);
@@ -41,56 +41,32 @@ int main() {
     make_pointer_array(buffer, &pointers);
     printf("pointers already done\n\n");
 
-    do_one_sort(fd, buffer, sorted_buffer, pointers, compar_1_look_note);
+    fprintf(stderr, "FIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\tFIRST SORT\n");
+    do_one_sort(fd, buffer, &sorted_buffer, pointers, compar_1_look_note);
     printf("first sort already done\n");
+    fprintf(stderr, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    fprintf(stderr, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
     // char* bak = "\nAAAAAA\n\n";
     // write(fd, bak, strlen(bak));
-
-    // do_one_sort(fd, buffer, sorted_buffer, pointers, compar_2_look_note);
+    fprintf(stderr, "SECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\n");
+    do_one_sort(fd, buffer, &sorted_buffer, pointers, compar_2_look_note);
+    fprintf(stderr, "second sort already done\n");
 
     free(buffer);
     free(pointers);
     free(sorted_buffer);
 }
 
-void do_one_sort(int fd, char* buffer, char* sorted_buffer, char** pointers,  int compar(const void* a, const void* b)) {
-    fprintf(stderr, "in function do_one_sort\n");
-    fprintf(stderr, "\tin qsort ");
-    qsort(pointers, (size_t)count_nlines(buffer), sizeof(char *), compar); //NOTE - count_nlines(buffer) called second time
-    printf("\tpointers already sorted\n");
-
-    fprintf(stderr, "\tafter first sort bak 0 are ok\n");
-
-    sorted_buffer = change_end_for_newline_symbols(pointers, buffer);
-    printf("\tsorted_buffer already done\n");
-
-    int wrote = (int) write(fd, sorted_buffer, file_size((char*)name_file));
-
-    printf("\twrote <%d>\n", wrote);
-}
-
-size_t file_size(char* name_of_file) {
-    assert(name_of_file);
-
-    struct stat buf;
-    int stat_res = stat(name_of_file, &buf);
-    size_t size_from_stat = (size_t)buf.st_size;
-
-    assert(stat_res == 0);
-    assert(size_from_stat > 0);
-
-    //fprintf(stderr, "size of test = <%ld>\t stat_res = <%d>\n", buf.st_size, stat_res);
-    return size_from_stat;
-}
-
 int read_file_to_buffer(char** buffer, int fd) {
     assert(buffer);
 
     const size_t size_from_stat = file_size((char*)name_file);
-    printf("size of file <%zu>\n", size_from_stat);
+
+    fprintf(stderr, "size of file <%zu>\n", size_from_stat);
 
     *buffer = (char*)calloc(size_from_stat+2, sizeof(char));//NOTE - 1 байт на первый символ \n, 2 байт на \0
+
     if (*buffer == NULL) {
         // TODO: use perror
         printf("ERROR/nToo few memory\n");
@@ -101,6 +77,7 @@ int read_file_to_buffer(char** buffer, int fd) {
     (*buffer)++;
 
     ssize_t read_res = read(fd, *buffer, size_from_stat);
+
     if ((size_t) read_res != size_from_stat) {
         // TODO: use perror
         printf("ERROR\nCan not read file\n");
@@ -109,36 +86,8 @@ int read_file_to_buffer(char** buffer, int fd) {
 
     (*buffer)--;
 
-    printf("in read_file_to_buffer bak n are ok\n");
+    fprintf(stderr, "in read_file_to_buffer bak n are ok\n");
     return 0;
-}
-
-size_t my_strlen(char* str) {
-    assert(str != NULL);
-
-    size_t size = 0;
-    for (int i = 0; str[i] != '\n'; i++) {
-        size++;
-    }
-
-    return size;
-}
-
-int count_nlines(char* buffer) {
-    assert(buffer);
-
-    int nlines = 0;
-    size_t iterations = file_size((char*)name_file);
-    for (size_t i = 0; i < iterations; i++) {
-        if (buffer[i] == '\n' || buffer[i] == '\0') {
-            nlines++;
-            buffer[i] = '\0';
-        }
-    }
-
-    printf("in count_nlines all bak n changed to bak 0\n");
-
-    return nlines;
 }
 
 int make_pointer_array(char* buffer, char*** pointers) {
@@ -165,9 +114,67 @@ int make_pointer_array(char* buffer, char*** pointers) {
     return 0;
 }
 
+void do_one_sort(int fd, char* buffer, char** sorted_buffer, char** pointers,  int compar(const void* a, const void* b)) {
+    fprintf(stderr, "in function do_one_sort\n");
+    fprintf(stderr, "\tin qsort ");
+    qsort(pointers, (size_t)count_nlines(buffer), sizeof(char *), compar); //NOTE - count_nlines(buffer) called second time
+    printf("\tpointers already sorted\n");
+
+    *sorted_buffer = change_end_for_newline_symbols(pointers, buffer);
+    printf("\tsorted_buffer already done\n");
+
+    int wrote = (int) write(fd, *sorted_buffer, strlen(buffer));//ANCHOR - ATTENSHION BLYAT NENADEJNO
+
+    printf("\twrote <%d>\n", wrote);
+}
+
+size_t file_size(char* name_of_file) {
+    assert(name_of_file);
+
+    struct stat buf;
+    int stat_res = stat(name_of_file, &buf);
+    size_t size_from_stat = (size_t)buf.st_size;
+
+    assert(stat_res == 0);
+    assert(size_from_stat > 0);
+
+    //fprintf(stderr, "size of test = <%ld>\t stat_res = <%d>\n", buf.st_size, stat_res);
+    return size_from_stat;
+}
+
+size_t my_strlen(char* str) {
+    assert(str != NULL);
+
+    size_t size = 0;
+    for (int i = 0; str[i] != '\n'; i++) {
+        size++;
+    }
+
+    return size;
+}
+
+int count_nlines(char* buffer) {
+    assert(buffer);
+
+    int nlines = 0;
+    size_t iterations = strlen(buffer);//ANCHOR - ATTENSHION BLYAT NENADEJNO
+    for (size_t i = 0; i < iterations; i++) {
+        if (buffer[i] == '\n' || buffer[i] == '\0') {
+            nlines++;
+            buffer[i] = '\0';
+        }
+    }
+
+    printf("in count_nlines all bak n changed to bak 0\n");
+
+    return nlines;
+}
+
 int compar_1_look_note(const void* a, const void* b) {
     assert(a);
     assert(b);
+
+    fprintf(stderr, "in compare_1_look_note\n");
 
     char* line_a = *((char **) a);
     char* line_b = *((char **) b);
@@ -196,6 +203,8 @@ int compar_2_look_note(const void* a, const void* b) {
     assert(a);
     assert(b);
 
+    fprintf(stderr, "in compare_2_look_note\n");
+
     char* line_a = *((char **) a);
     char* line_b = *((char **) b);
 
@@ -223,7 +232,7 @@ char* change_end_for_newline_symbols(char** pointers, char* buffer) {
     fprintf(stderr, "\t");
 
     int nlines = count_nlines(buffer);  //NOTE - count_nlines(buffer) called
-    size_t iterations = file_size((char*)name_file);
+    size_t iterations = strlen(buffer);//ANCHOR - ATTENSHION BLYAT NENADEJNO
     char* buf = (char*)calloc(iterations+2, sizeof(char));
 
     fprintf(stderr, "\titerations <%zu> buf pointer <%p> or <%d>\n", iterations, buf, buf);
@@ -234,20 +243,11 @@ char* change_end_for_newline_symbols(char** pointers, char* buffer) {
         }
     }
 
-    fprintf(stderr, "\tin change_end_for_newline_symbols all bak 0 changed to bak n\n");
-// +- 1
-    fprintf(stderr, "nlines = <%d>\n\n", nlines);
-    fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
-
     size_t filled_buf = 0;
     for (int line_pointer = 0; line_pointer < nlines; line_pointer++) {
         memcpy(buf+filled_buf, pointers[line_pointer], my_strlen(pointers[line_pointer]));
         filled_buf = filled_buf + my_strlen(pointers[line_pointer]);
-
-        fprintf(stderr, "line_pointer = <%d>  filled_buf = <%zu> len line = <%zu>\n", line_pointer, filled_buf, my_strlen(pointers[line_pointer]));
-        fprintf(stderr, "line: <%s>\n\n", pointers[line_pointer]);
     }
-    fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
 
     return buf;
 }
