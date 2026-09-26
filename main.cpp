@@ -36,6 +36,7 @@ int main() {
 
     fprintf(stderr, "start\n\n");
     size_t size_of_buffer = read_file_to_buffer(&buffer, fd);
+    assert(size_of_buffer>0);
     printf("file already read\n\n");
 
     fprintf(stderr, "in make_pointer_array\n");
@@ -51,8 +52,6 @@ int main() {
     fprintf(stderr, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
     fprintf(stderr, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
-    // char* bak = "\nAAAAAA\n\n";
-    // write(fd, bak, strlen(bak));
     fprintf(stderr, "SECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\tSECOND SORT\n");
     do_one_sort(fd, buffer, size_of_buffer, &sorted_buffer, pointers, compar_2_look_note);
     fprintf(stderr, "second sort already done\n");
@@ -74,7 +73,7 @@ size_t read_file_to_buffer(char** buffer, int fd) {
     if (*buffer == NULL) {
         // TODO: use perror
         printf("ERROR/nToo few memory\n");
-        return -1;
+        return 0;
     }
 
     (*buffer)[0] = '\n';
@@ -86,7 +85,7 @@ size_t read_file_to_buffer(char** buffer, int fd) {
     if ((size_t) read_res != size_from_stat) {
         // TODO: use perror
         printf("ERROR\nCan not read file\n");
-        return -1;
+        return 0;
     }
 
     (*buffer)--;
@@ -134,7 +133,7 @@ void do_one_sort(int fd, char* buffer, size_t size_of_buffer, char** sorted_buff
         fprintf(stderr, "|%c|", buffer[i]);
     }
     fprintf(stderr, "\tstrlen of buffer which is used by wrote <%zu>\n", size_of_buffer);
-    int wrote = (int) write(fd, *sorted_buffer, size_of_buffer);
+    int wrote = (int) write(fd, *sorted_buffer, size_of_buffer-8);//FIXME - WTF?
 
     printf("\twrote <%d>\n", wrote);
 }
@@ -208,7 +207,7 @@ int compar_1_look_note(const void* a, const void* b) {
         else if (line_a[index_a] > line_b[index_b])
             return 1;
     }
-    return NULL;
+    return 0;
 }
 
 int compar_2_look_note(const void* a, const void* b) {
@@ -220,7 +219,7 @@ int compar_2_look_note(const void* a, const void* b) {
 
     size_t iterations = MIN(strlen(line_a), strlen(line_b));
 
-    fprintf(stderr, "\t\tin comparator 1\n");
+    fprintf(stderr, "\t\tin comparator 2\n");
     fprintf(stderr, "\t\tlen a = <%zu> \t len b = <%zu>\n", strlen(line_a), strlen(line_b));
 
     assert(iterations > 20 && iterations < 40); //REVIEW - delete than
@@ -232,10 +231,12 @@ int compar_2_look_note(const void* a, const void* b) {
         while (isalpha(line_b[index_b]) == 0) {
             index_b--;
         }
-        if (line_a[index_a] - line_b[index_b] != 0)
-            return line_a[index_a] - line_b[index_b];
+        if (line_a[index_a] < line_b[index_b])
+            return -1;
+        else if (line_a[index_a] > line_b[index_b])
+            return 1;
     }
-    return NULL;
+    return 0;
 }//REVIEW - if first string is in second string
 
 void change_end_for_newline_symbols(char** pointers, char* buffer, size_t size_of_buffer, char** sorted_buffer) {
