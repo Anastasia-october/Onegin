@@ -127,13 +127,13 @@ void do_one_sort(int fd, char* buffer, size_t size_of_buffer, char** sorted_buff
 
     fprintf(stderr, "\tcall change_end_for_newline_symbols\n");
     change_end_for_newline_symbols(pointers, buffer, size_of_buffer, sorted_buffer);
-    fprintf(stderr, "sorted_buffer already done\n\tPiece of buffer\n\t");
+    fprintf(stderr, "sorted_buffer already done\n\tPiece of buffer before write\n\t");
 
-    for (int i = 0; i < 50; i++) {
-        fprintf(stderr, "|%c|", buffer[i]);
+    for (int i = 0; i < 50; i++) {//ANCHOR - here
+        fprintf(stderr, "|%c|", (*sorted_buffer)[i]);
     }
     fprintf(stderr, "\tstrlen of buffer which is used by wrote <%zu>\n", size_of_buffer);
-    int wrote = (int) write(fd, *sorted_buffer, size_of_buffer-8);//FIXME - WTF?
+    int wrote = (int) write(fd, *sorted_buffer, size_of_buffer-1);//FIXME - \n disappear
 
     printf("\twrote <%d>\n", wrote);
 }
@@ -228,10 +228,10 @@ int compar_2_look_note(const void* a, const void* b) {
         size_t difference = strlen(line_a) - strlen(line_b);
 
         for (size_t index_a = iterations, index_b = iterations-difference; index_a > 0 && index_b > 0; index_a--, index_b--) {
-        while (isalpha(line_a[index_a]) == 0) {
+        while (isalpha(line_a[index_a]) == 0 && index_a > 0) {
             index_a--;
         }
-        while (isalpha(line_b[index_b]) == 0) {
+        while (isalpha(line_b[index_b]) == 0 && index_b > 0) {
             index_b--;
         }
         if (line_a[index_a] < line_b[index_b])
@@ -244,10 +244,10 @@ int compar_2_look_note(const void* a, const void* b) {
         size_t difference = strlen(line_b) - strlen(line_a);
 
         for (size_t index_a = iterations-difference, index_b = iterations; index_a > 0 && index_b > 0; index_a--, index_b--) {
-        while (isalpha(line_a[index_a]) == 0) {
+        while (isalpha(line_a[index_a]) == 0 && index_a > 0) {
             index_a--;
         }
-        while (isalpha(line_b[index_b]) == 0) {
+        while (isalpha(line_b[index_b]) == 0 && index_b > 0) {
             index_b--;
         }
         if (line_a[index_a] < line_b[index_b])
@@ -273,7 +273,7 @@ void change_end_for_newline_symbols(char** pointers, char* buffer, size_t size_o
 
     fprintf(stderr, "\t\titerations <%zu> buf pointer <%p> or <%d>\n", iterations, *sorted_buffer, *sorted_buffer);
 
-    fprintf(stderr, "\t\tbefore changing 0 to n-------------------------------------------------------------------------\n\t\t");
+    fprintf(stderr, "\t\tbuffer before changing 0 to n-------------------------------------------------------------------------\n\t\t");
     for (int i1 = 0; i1 < 50; i1++) {
         fprintf(stderr, "|%c|", buffer[i1]);
     }
@@ -284,7 +284,7 @@ void change_end_for_newline_symbols(char** pointers, char* buffer, size_t size_o
             buffer[i] = '\n';
         }
     }
-    fprintf(stderr, "\t\tafter changing 0 to n-------------------------------------------------------------------------\n\t\t");
+    fprintf(stderr, "\t\tbuffer after changing 0 to n-------------------------------------------------------------------------\n\t\t");
     for (int i2 = 0; i2 < 50; i2++) {
         fprintf(stderr, "|%c|", buffer[i2]);
     }
@@ -293,7 +293,7 @@ void change_end_for_newline_symbols(char** pointers, char* buffer, size_t size_o
 
     size_t filled_buf = 0;
     for (int line_pointer = 0; line_pointer < nlines; line_pointer++) {
-        memcpy(*sorted_buffer+filled_buf, pointers[line_pointer], my_strlen(pointers[line_pointer]));
-        filled_buf = filled_buf + my_strlen(pointers[line_pointer]);
+        memcpy(*sorted_buffer+filled_buf, pointers[line_pointer], my_strlen(pointers[line_pointer])+1);
+        filled_buf = filled_buf + my_strlen(pointers[line_pointer])+1;
     }
 }
