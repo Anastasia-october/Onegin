@@ -34,10 +34,11 @@ int main() {
     char* sorted_buffer = 0;
 
     read_file_to_buffer(&buffer, fd);
-    printf("file already read\n");
+    printf("file already read\n\n");
 
+    fprintf(stderr, "in make_pointer_array ");
     make_pointer_array(buffer, &pointers);
-    printf("pointers already done\n");
+    printf("pointers already done\n\n");
 
     do_one_sort(fd, buffer, sorted_buffer, pointers, compar_1_look_note);
     printf("first sort already done\n");
@@ -53,16 +54,19 @@ int main() {
 }
 
 void do_one_sort(int fd, char* buffer, char* sorted_buffer, char** pointers,  int compar(const void* a, const void* b)) {
-    printf("in function do_one_sort\n\n");
-    qsort(pointers, (size_t)count_nlines(buffer), sizeof(char *), compar);
-    printf("pointers already sorted\n");
+    fprintf(stderr, "in function do_one_sort\n");
+    fprintf(stderr, "\tin qsort ");
+    qsort(pointers, (size_t)count_nlines(buffer), sizeof(char *), compar); //NOTE - count_nlines(buffer) called second time
+    printf("\tpointers already sorted\n");
+
+    fprintf(stderr, "\tafter first sort bak 0 are ok\n");
 
     sorted_buffer = change_end_for_newline_symbols(pointers, buffer);
-    printf("sorted_buffer already done\n");
+    printf("\tsorted_buffer already done\n");
 
     int wrote = (int) write(fd, sorted_buffer, file_size((char*)name_file));
 
-    printf("wrote <%d>\n", wrote);
+    printf("\twrote <%d>\n", wrote);
 }
 
 size_t file_size(char* name_of_file) {
@@ -85,7 +89,7 @@ int read_file_to_buffer(char** buffer, int fd) {
     const size_t size_from_stat = file_size((char*)name_file);
     printf("size of file <%zu>\n", size_from_stat);
 
-    *buffer = (char*)calloc(size_from_stat+2, sizeof(char));
+    *buffer = (char*)calloc(size_from_stat+2, sizeof(char));//NOTE - 1 байт на первый символ \n, 2 байт на \0
     if (*buffer == NULL) {
         // TODO: use perror
         printf("ERROR/nToo few memory\n");
@@ -103,6 +107,8 @@ int read_file_to_buffer(char** buffer, int fd) {
     }
 
     (*buffer)--;
+
+    printf("in read_file_to_buffer bak n are ok\n");
     return 0;
 }
 
@@ -118,6 +124,8 @@ int count_nlines(char* buffer) {
         }
     }
 
+    printf("in count_nlines all bak n changed to bak 0\n");
+
     return nlines;
 }
 
@@ -125,7 +133,7 @@ int make_pointer_array(char* buffer, char*** pointers) {
     assert(buffer);
     assert(pointers);
 
-    size_t nlines = (size_t)count_nlines(buffer);
+    size_t nlines = (size_t)count_nlines(buffer);  //NOTE - count_nlines(buffer) called first
     // printf("number of lines <%zu>\n", nlines);
 
     *pointers = (char**) calloc(nlines, sizeof(char*));
@@ -149,16 +157,16 @@ int compar_1_look_note(const void* a, const void* b) {
     assert(a);
     assert(b);
 
-    char* line_a = *((char **) a);//MENTOR - why * not **
+    char* line_a = *((char **) a);
     char* line_b = *((char **) b);
 
     size_t iterations = MIN(strlen(line_a), strlen(line_b));
     // fprintf(stderr, "len a = <%zu> \t len b = <%zu>\n", strlen(line_a), strlen(line_b));
-    assert(iterations > 20 && iterations < 40); //REVIEW - delete than
+    assert(iterations > 20 && iterations < 40); //ANCHOR - delete than
 
     for (size_t index_a = 0, index_b = 0; index_a < iterations && index_b < iterations; index_a++, index_b++) {
         // FIXME: overflow \0
-        while (isalpha(line_a[index_a]) == 0) { //MENTOR - NULL or 0
+        while (isalpha(line_a[index_a]) == 0) {
             index_a++;
         }
         while (isalpha(line_b[index_b]) == 0) {
@@ -166,7 +174,7 @@ int compar_1_look_note(const void* a, const void* b) {
         }
         if (line_a[index_a] < line_b[index_b])
             return -1;
-        else if (line_a[index_a] >= line_b[index_b])
+        else if (line_a[index_a] > line_b[index_b])
             return 1;
     }
     return NULL;
@@ -176,49 +184,57 @@ int compar_2_look_note(const void* a, const void* b) {
     assert(a);
     assert(b);
 
-    char* line_a = *((char **) a);//MENTOR - why * not **
+    char* line_a = *((char **) a);
     char* line_b = *((char **) b);
 
     size_t iterations = MIN(strlen(line_a), strlen(line_b));
     assert(iterations > 20 && iterations < 40); //REVIEW - delete than
-    // FIXME: difference
+
     for (size_t index_a = iterations, index_b = iterations; index_a > 0 && index_b > 0; index_a--, index_b--) {
-        while (isalpha(line_a[index_a]) == 0) { //MENTOR - NULL or 0
+        while (isalpha(line_a[index_a]) == 0) {
             index_a--;
         }
         while (isalpha(line_b[index_b]) == 0) {
             index_b--;
         }
-        if (line_a[index_a] < line_b[index_b])
-            return -1;
-        else if (line_a[index_a] >= line_b[index_b])
-            return 1;
+        if (line_a[index_a] - line_b[index_b] != 0)
+            return line_a[index_a] - line_b[index_b];
     }
     return NULL;
-}
+}//REVIEW - if first string is in second string
 
 char* change_end_for_newline_symbols(char** pointers, char* buffer) {
     assert(pointers);
     assert(buffer);
 
+    fprintf(stderr, "\nin change_end_for_newline_symbols\n");
+    fprintf(stderr, "\t");
+
+    int nlines = count_nlines(buffer);  //NOTE - count_nlines(buffer) called
     size_t iterations = file_size((char*)name_file);
     char* buf = (char*)calloc(iterations+2, sizeof(char));
-    printf("iterations <%d> buf pointer <%p> or <%d>\n");
+
+    fprintf(stderr, "\titerations <%zu> buf pointer <%p> or <%d>\n", iterations, buf, buf);
 
     for (size_t i = 0; i < iterations; i++) {
         if (buffer[i] == '\0') {
             buffer[i] = '\n';
-            printf("%c", buffer[i]);
         }
     }
-    printf("\n");
+
+    fprintf(stderr, "\tin change_end_for_newline_symbols all bak 0 changed to bak n\n");
 // +- 1
-    int nlines = count_nlines(buffer);
+    fprintf(stderr, "nlines = <%d>\n\n", nlines);
+    fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+
     size_t filled_buf = 0;
     for (int line_pointer = 0; line_pointer < nlines; line_pointer++) {
         memcpy(buf+filled_buf, pointers[line_pointer], strlen(pointers[line_pointer]));
         filled_buf = filled_buf + strlen(pointers[line_pointer]);
+
+        fprintf(stderr, "line_pointer = <%d>  filled_buf = <%zu>  line: <%s>\n", line_pointer, filled_buf, pointers[line_pointer]);
     }
+    fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
 
     for (int i = 0; i < 40; i++) {
         fprintf(stderr, "%c", buf[i]);

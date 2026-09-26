@@ -44,3 +44,11 @@ int compar_1_look_note(const void* a, const void* b) {
     }
     return NULL;
 }
+
+---------------------------------------------------------------------------------------
+
+    const size_t size_from_stat = file_size((char*)name_file); //ANCHOR - delete after debug
+    fprintf(stderr, "------------------------------------------------------------\n");
+    for (size_t i = 0; i<size_from_stat+2; i++)
+        fprintf(stderr, "%c", buffer[i]);
+    fprintf(stderr, "------------------------------------------------------------\n");
