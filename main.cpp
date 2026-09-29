@@ -8,7 +8,7 @@
 #include <sys/param.h>
 #include <string.h>
 
-char* name_file = "testOnegin.txt";
+char* name_file = "onegin.txt";
 
 size_t read_file_to_buffer(char** buffer, int fd);
 int make_pointer_array(char* buffer, char*** pointers, size_t size_of_buffer);
@@ -29,6 +29,8 @@ void change_end_for_newline_symbols(char** pointers, char* buffer, size_t size_o
 
 
 int main() {
+
+    // TODO: handle open errors
     int fd = open(name_file, O_RDWR);
     char* buffer = 0;
     char** pointers = 0;
@@ -80,6 +82,7 @@ size_t read_file_to_buffer(char** buffer, int fd) {
     (*buffer)++;
 
     ssize_t read_res = read(fd, *buffer, size_from_stat);
+    // TODO: not from here
     fprintf(stderr, "have read <%zu> bytes\n", (size_t)read_res);
 
     if ((size_t) read_res != size_from_stat) {
@@ -119,6 +122,7 @@ int make_pointer_array(char* buffer, char*** pointers, size_t size_of_buffer) {
     return 0;
 }
 
+// TODO: split into 2 funcs
 void do_one_sort(int fd, char* buffer, size_t size_of_buffer, char** sorted_buffer, char** pointers,  int compar(const void* a, const void* b)) {
     fprintf(stderr, "in function do_one_sort\n");
     fprintf(stderr, "\tcall qsort call comparator\n");
@@ -133,7 +137,11 @@ void do_one_sort(int fd, char* buffer, size_t size_of_buffer, char** sorted_buff
         fprintf(stderr, "|%c|", (*sorted_buffer)[i]);
     }
     fprintf(stderr, "\tstrlen of buffer which is used by wrote <%zu>\n", size_of_buffer);
-    int wrote = (int) write(fd, *sorted_buffer, size_of_buffer-1);//FIXME - \n disappear
+
+    char* separator = "\n--------\n\n";
+    write(fd, separator, strlen(separator));
+
+    int wrote = (int) write(fd, *sorted_buffer, size_of_buffer-1);
 
     printf("\twrote <%d>\n", wrote);
 }
@@ -192,8 +200,9 @@ int compar_1_look_note(const void* a, const void* b) {
 
     fprintf(stderr, "\t\tin comparator 1\n");
     fprintf(stderr, "\t\tlen a = <%zu> \t len b = <%zu>\n", strlen(line_a), strlen(line_b));
+    fprintf(stderr, "\t\tline b <%s>\n", line_b);
 
-    assert(iterations > 20 && iterations < 40); //REVIEW - delete than
+    //assert(iterations > 20 && iterations < 40); //REVIEW - delete than
 
     for (size_t index_a = 0, index_b = 0; index_a < iterations && index_b < iterations; index_a++, index_b++) {
         while (isalpha(line_a[index_a]) == 0) {
@@ -222,7 +231,7 @@ int compar_2_look_note(const void* a, const void* b) {
 
     size_t iterations = MAX(strlen(line_a), strlen(line_b));
 
-    assert(iterations > 20 && iterations < 45); //REVIEW - delete than
+    //assert(iterations > 20 && iterations < 45); //REVIEW - delete than
 
     if (strlen(line_a) > strlen(line_b)) {
         size_t difference = strlen(line_a) - strlen(line_b);
